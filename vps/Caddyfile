@@ -1,0 +1,4 @@
+{$N8N_DOMAIN} {
+  reverse_proxy n8n:5678
+  encode zstd gzip
+}

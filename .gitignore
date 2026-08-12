@@ -1,0 +1,17 @@
+# Secrets
+.env
+**/.env
+*.key
+*.pem
+
+# Runtime and customer data
+backups/
+*.dump
+*.sqlite
+*.sqlite3
+*.json
+
+# Local files
+.DS_Store
+*.docx
+compose.yaml
