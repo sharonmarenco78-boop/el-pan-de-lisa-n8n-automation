@@ -1,5 +1,7 @@
 # Secrets
 .env
+automation.env
+.DS_Store
 **/.env
 *.key
 *.pem
@@ -10,6 +12,8 @@ backups/
 *.sqlite
 *.sqlite3
 *.json
+!dist/
+!dist/*.json
 
 # Local files
 .DS_Store
