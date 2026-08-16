@@ -285,6 +285,12 @@ const logResultFromCandidates = (candidateNode, eventName) => ({
 function statusEmailWorkflow({ name, status, eventName, html, subject }) {
   const candidate = 'Seleccionar envíos pendientes';
   const selectCode = `const pedidos = items.filter(i => i.json.__kind === 'pedido');\nconst logs = items.filter(i => i.json.__kind === 'log');\nconst sent = new Set(logs.filter(i => i.json.Evento === '${eventName}' && i.json.Resultado === 'Enviado').map(i => String(i.json['N.º de orden'] ?? '').trim()));\nreturn pedidos.filter(i => i.json.Estado === '${status}').map(i => {\n  const key = Object.keys(i.json).find(k => k.normalize('NFC').trim() === 'N.º de orden');\n  const order = String(key ? i.json[key] : '').trim();\n  if (!order || sent.has(order)) return null;\n  const json = { ...i.json, 'N.º de orden': order, NumeroOrden: order };\n  delete json.__kind;\n  return { json };\n}).filter(Boolean);`;
+  const uniqueSelectCode = selectCode
+    .replace('return pedidos.filter', 'const claimed = new Set(sent);\nreturn pedidos.filter')
+    .replace(
+      'if (!order || sent.has(order)) return null;',
+      'if (!order || claimed.has(order)) return null;\n  claimed.add(order);',
+    );
   const nodes = [
     schedule([-1000, 0]),
     getRows('Leer Pedidos', PEDIDOS_SHEET_ID, 'Pedidos', [-780, -140]),
@@ -292,7 +298,7 @@ function statusEmailWorkflow({ name, status, eventName, html, subject }) {
     getRows('Leer Automation Log', LOG_SHEET_ID, 'Automation Log', [-780, 140], [], { alwaysOutputData: true }),
     tagItems('Marcar Log', 'log', [-560, 140]),
     mergeAppend('Unir Pedidos y Log', [-340, 0]),
-    node(candidate, 'n8n-nodes-base.code', [-120, 0], { jsCode: selectCode }, { typeVersion: 2 }),
+    node(candidate, 'n8n-nodes-base.code', [-120, 0], { jsCode: uniqueSelectCode }, { typeVersion: 2 }),
     node('Enviar correo', 'n8n-nodes-base.gmail', [120, 0], {
       sendTo: '={{ $json.Correo }}',
       subject,
@@ -319,6 +325,12 @@ function statusEmailWorkflow({ name, status, eventName, html, subject }) {
 function reviewQueueWorkflow() {
   const candidate = 'Seleccionar entregados nuevos';
   const selectCode = `const pedidos = items.filter(i => i.json.__kind === 'pedido');\nconst logs = items.filter(i => i.json.__kind === 'log');\nconst existing = new Set(logs.filter(i => i.json.Evento === 'review_request' && ['Pendiente','Enviado'].includes(i.json.Resultado)).map(i => String(i.json['N.º de orden'] ?? '').trim()));\nreturn pedidos.filter(i => i.json.Estado === 'Entregado').map(i => {\n  const key = Object.keys(i.json).find(k => k.normalize('NFC').trim() === 'N.º de orden');\n  const order = String(key ? i.json[key] : '').trim();\n  if (!order || existing.has(order)) return null;\n  return { json: { Fecha: new Date().toISOString(), 'N.º de orden': order, Evento: 'review_request', 'Estado detectado': 'Entregado', Correo: i.json.Correo ?? '', 'Fecha envío': '', Resultado: 'Pendiente', 'Message ID': '', Notas: 'Esperando 48 horas antes de solicitar review' } };\n}).filter(Boolean);`;
+  const uniqueSelectCode = selectCode
+    .replace('return pedidos.filter', 'const claimed = new Set(existing);\nreturn pedidos.filter')
+    .replace(
+      'if (!order || existing.has(order)) return null;',
+      'if (!order || claimed.has(order)) return null;\n  claimed.add(order);',
+    );
   const nodes = [
     schedule([-1000, 0]),
     getRows('Leer Pedidos', PEDIDOS_SHEET_ID, 'Pedidos', [-780, -140]),
@@ -326,7 +338,7 @@ function reviewQueueWorkflow() {
     getRows('Leer Automation Log', LOG_SHEET_ID, 'Automation Log', [-780, 140], [], { alwaysOutputData: true }),
     tagItems('Marcar Log', 'log', [-560, 140]),
     mergeAppend('Unir Pedidos y Log', [-340, 0]),
-    node(candidate, 'n8n-nodes-base.code', [-120, 0], { jsCode: selectCode }, { typeVersion: 2 }),
+    node(candidate, 'n8n-nodes-base.code', [-120, 0], { jsCode: uniqueSelectCode }, { typeVersion: 2 }),
     appendLog('Registrar espera', [120, 0]),
   ];
   return workflowBase('El Pan de Lisa — Programar review 48h', nodes, {
@@ -347,6 +359,12 @@ function reviewSenderWorkflow() {
     'https://docs.google.com/forms/d/e/1FAIpQLScYEs0m7KKzOouSuusR3J8We8x-paIGs-VkAllDQaBMW6c4Ig/viewform',
     REVIEW_FORM_URL,
   );
+  const uniqueSelectCode = configuredSelectCode
+    .replace('return pending.map', 'const claimed = new Set(sent);\nreturn pending.map')
+    .replace(
+      "if (!pedido || pedido.Estado !== 'Entregado' || sent.has(order)) return null;",
+      "if (!pedido || pedido.Estado !== 'Entregado' || claimed.has(order)) return null;\n  claimed.add(order);",
+    );
   const reviewHtml = directTemplate(reviewTemplate).replace('__REVIEW_URL__', '{{ $json.ReviewURL }}');
   const nodes = [
     schedule([-1000, 0]),
@@ -355,7 +373,7 @@ function reviewSenderWorkflow() {
     getRows('Leer Automation Log', LOG_SHEET_ID, 'Automation Log', [-780, 140], [], { alwaysOutputData: true }),
     tagItems('Marcar Log', 'log', [-560, 140]),
     mergeAppend('Unir Pedidos y Log', [-340, 0]),
-    node(candidate, 'n8n-nodes-base.code', [-120, 0], { jsCode: configuredSelectCode }, { typeVersion: 2 }),
+    node(candidate, 'n8n-nodes-base.code', [-120, 0], { jsCode: uniqueSelectCode }, { typeVersion: 2 }),
     node('Enviar solicitud de review', 'n8n-nodes-base.gmail', [120, 0], {
       sendTo: '={{ $json.Correo }}',
       subject: '=¿Cómo estuvo tu pedido? — Pedido {{ $json.NumeroOrden }}',

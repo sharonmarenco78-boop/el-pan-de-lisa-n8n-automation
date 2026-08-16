@@ -27,10 +27,18 @@ testWorkflow.connections['Ejecutar prueba manual'] = testWorkflow.connections['C
 delete testWorkflow.connections['Cada hora'];
 
 const candidate = testWorkflow.nodes.find((node) => node.name === 'Seleccionar reviews vencidos');
-candidate.parameters.jsCode = candidate.parameters.jsCode.replace(
-  '}).filter(Boolean);',
-  `}).filter(Boolean).filter(i => i.json.NumeroOrden === ${JSON.stringify(orderId)});`,
-);
+const formUrl = candidate.parameters.jsCode.match(/ReviewURL: '([^']+)'/)?.[1];
+if (!formUrl) throw new Error('Review form URL not found in source workflow');
+candidate.parameters.jsCode = `const pedidos = items.filter(i => i.json.__kind === 'pedido');
+const pedido = pedidos.find(i => String(i.json['N.º de orden'] ?? '').trim() === ${JSON.stringify(orderId)});
+if (!pedido || pedido.json.Estado !== 'Entregado') return [];
+const order = String(pedido.json['N.º de orden']).trim();
+const products = [];
+if (Number(pedido.json['Cantidad Pan Blanco'] ?? 0) > 0) products.push('Pan Blanco');
+if (Number(pedido.json['Cantidad Pan Semi Integral'] ?? 0) > 0) products.push('Pan Semi Integral');
+const product = products.join(' + ') || 'Producto no identificado';
+const query = ['usp=pp_url','entry.950326924='+encodeURIComponent(order),'entry.1893454218='+encodeURIComponent(pedido.json.Nombre ?? ''),'entry.1903981963='+encodeURIComponent(product),'entry.732910652='+encodeURIComponent(pedido.json.Correo ?? '')].join('&');
+return [{ json: { ...pedido.json, NumeroOrden: order, Producto: product, ReviewURL: ${JSON.stringify(formUrl)} + '?' + query } }];`;
 
 const email = testWorkflow.nodes.find((node) => node.name === 'Enviar solicitud de review');
 email.name = 'Enviar prueba de review';

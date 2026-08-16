@@ -10,7 +10,7 @@
           -1000,
           0
         ],
-        "id": "fe9403d8-6ebf-4fcd-9da8-fc1ffb5c06f5",
+        "id": "f10c5cb4-acd0-4b1c-8d26-b7ec1852a2b9",
         "name": "Ejecutar prueba manual"
       },
       {
@@ -40,7 +40,7 @@
           -780,
           -140
         ],
-        "id": "0f627ff6-afad-4990-a25c-52a618c1b3d1",
+        "id": "f6cd3ec4-d73f-4516-8095-a24b23947805",
         "name": "Leer Pedidos",
         "credentials": {
           "googleSheetsOAuth2Api": {
@@ -58,7 +58,7 @@
           -560,
           -140
         ],
-        "id": "9acebb97-bc32-4e56-a129-7b2450cfe39b",
+        "id": "a97b5174-7cfe-4b0d-b676-2c3809992cb3",
         "name": "Marcar Pedidos"
       },
       {
@@ -88,7 +88,7 @@
           -780,
           140
         ],
-        "id": "bc0e32e7-c46b-4517-95f0-b5edfbd58723",
+        "id": "7e305efa-2dc4-4419-b715-8d1498dfa28c",
         "name": "Leer Automation Log",
         "credentials": {
           "googleSheetsOAuth2Api": {
@@ -107,7 +107,7 @@
           -560,
           140
         ],
-        "id": "fd081734-759b-48c3-88b2-5a9db86fcc5e",
+        "id": "8eea78fe-4061-4cdd-a3ad-7c27cc46a24e",
         "name": "Marcar Log"
       },
       {
@@ -120,12 +120,12 @@
           -340,
           0
         ],
-        "id": "a0a4d9af-a3ee-4153-9944-e7b2a87456dc",
+        "id": "0daa624c-22c5-4236-b1dd-e5631c7bad15",
         "name": "Unir Pedidos y Log"
       },
       {
         "parameters": {
-          "jsCode": "const pedidos = items.filter(i => i.json.__kind === 'pedido');\nconst logs = items.filter(i => i.json.__kind === 'log');\nconst sent = new Set(logs.filter(i => i.json.Evento === 'review_request' && i.json.Resultado === 'Enviado').map(i => String(i.json['N.º de orden'] ?? '').trim()));\nconst cutoff = Date.now() - 48 * 60 * 60 * 1000;\nconst pending = logs.filter(i => i.json.Evento === 'review_request' && i.json.Resultado === 'Pendiente' && Date.parse(i.json.Fecha) <= cutoff);\nconst byOrder = new Map(pedidos.map(i => [String(i.json['N.º de orden'] ?? '').trim(), i.json]));\nreturn pending.map(i => {\n  const order = String(i.json['N.º de orden'] ?? '').trim();\n  const pedido = byOrder.get(order);\n  if (!pedido || pedido.Estado !== 'Entregado' || sent.has(order)) return null;\n  const products = [];\n  if (Number(pedido['Cantidad Pan Blanco'] ?? 0) > 0) products.push('Pan Blanco');\n  if (Number(pedido['Cantidad Pan Semi Integral'] ?? 0) > 0) products.push('Pan Semi Integral');\n  const product = products.join(' + ') || 'Producto no identificado';\n  const query = ['usp=pp_url','entry.950326924='+encodeURIComponent(order),'entry.1893454218='+encodeURIComponent(pedido.Nombre ?? ''),'entry.1903981963='+encodeURIComponent(product),'entry.732910652='+encodeURIComponent(pedido.Correo ?? '')].join('&');\n  return { json: { ...pedido, NumeroOrden: order, Producto: product, ReviewURL: 'https://docs.google.com/forms/d/e/example-form-id/viewform?' + query } };\n}).filter(Boolean).filter(i => i.json.NumeroOrden === \"EXAMPLE-ORDER\");"
+          "jsCode": "const pedidos = items.filter(i => i.json.__kind === 'pedido');\nconst pedido = pedidos.find(i => String(i.json['N.º de orden'] ?? '').trim() === \"EXAMPLE-ORDER\");\nif (!pedido || pedido.json.Estado !== 'Entregado') return [];\nconst order = String(pedido.json['N.º de orden']).trim();\nconst products = [];\nif (Number(pedido.json['Cantidad Pan Blanco'] ?? 0) > 0) products.push('Pan Blanco');\nif (Number(pedido.json['Cantidad Pan Semi Integral'] ?? 0) > 0) products.push('Pan Semi Integral');\nconst product = products.join(' + ') || 'Producto no identificado';\nconst query = ['usp=pp_url','entry.950326924='+encodeURIComponent(order),'entry.1893454218='+encodeURIComponent(pedido.json.Nombre ?? ''),'entry.1903981963='+encodeURIComponent(product),'entry.732910652='+encodeURIComponent(pedido.json.Correo ?? '')].join('&');\nreturn [{ json: { ...pedido.json, NumeroOrden: order, Producto: product, ReviewURL: \"https://docs.google.com/forms/d/e/example-form-id/viewform?\" + '?' + query } }];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -133,7 +133,7 @@
           -120,
           0
         ],
-        "id": "665ee568-eebc-4812-b975-bae2aa94d143",
+        "id": "59c33815-7e4c-48df-9ec0-0ae889604ce3",
         "name": "Seleccionar reviews vencidos"
       },
       {
@@ -150,7 +150,7 @@
           120,
           0
         ],
-        "id": "a8f2d090-13e5-4cc3-b5ee-8370c0e95d2a",
+        "id": "93f41f22-e585-4252-b2b4-fcaea3d09316",
         "name": "Enviar prueba de review",
         "credentials": {
           "gmailOAuth2": {
@@ -164,61 +164,61 @@
           "assignments": {
             "assignments": [
               {
-                "id": "fb4e436e-4df2-4508-bfbc-9316c2b97acd",
+                "id": "7c16a881-55be-4e79-9dcc-dac2f2bd8320",
                 "name": "Fecha",
                 "value": "={{ $now.toISO() }}",
                 "type": "string"
               },
               {
-                "id": "4cd8c456-5361-49a2-a6a6-f5516af6a353",
+                "id": "4180b3cc-9019-499a-a34c-4ba6a57ea555",
                 "name": "NumeroOrden",
                 "value": "={{ $('Seleccionar reviews vencidos').all()[$itemIndex].json.NumeroOrden }}",
                 "type": "string"
               },
               {
-                "id": "f7ff65ec-d8a1-4fab-8a6c-b2cf0a7c0268",
+                "id": "aa8fdfab-896e-4e02-ac68-b8c34cc27a1e",
                 "name": "N.º de orden",
                 "value": "={{ $('Seleccionar reviews vencidos').all()[$itemIndex].json.NumeroOrden }}",
                 "type": "string"
               },
               {
-                "id": "20638b28-5a42-4628-a9b9-e493f3f6b09e",
+                "id": "b6f45cf9-a5ed-43a5-803e-7a0bb03545c9",
                 "name": "Evento",
                 "value": "review_request_test_v2",
                 "type": "string"
               },
               {
-                "id": "54c5b9d3-0b3d-4370-8dd2-309d08808284",
+                "id": "440be991-1ef4-48a8-a482-0a664b9bc9f2",
                 "name": "Estado detectado",
                 "value": "={{ $('Seleccionar reviews vencidos').all()[$itemIndex].json.Estado }}",
                 "type": "string"
               },
               {
-                "id": "437ca12b-6375-42b5-9d73-3f3daea3564f",
+                "id": "5a0571df-fdd6-4646-bd42-813c58a03575",
                 "name": "Correo",
                 "value": "={{ $('Seleccionar reviews vencidos').all()[$itemIndex].json.Correo }}",
                 "type": "string"
               },
               {
-                "id": "c6f7722b-9f86-4076-b778-03c9530ce432",
+                "id": "bee3786d-96f1-42fe-ae43-f6fce869d983",
                 "name": "Fecha envío",
                 "value": "={{ $json.error ? \"\" : $now.toISO() }}",
                 "type": "string"
               },
               {
-                "id": "bb32bc88-d406-4f07-8747-7110bfc83b82",
+                "id": "e36e9b8b-deaf-4f0d-acbe-aa5d06ffdf2d",
                 "name": "Resultado",
                 "value": "={{ $json.error ? \"Error\" : \"Enviado\" }}",
                 "type": "string"
               },
               {
-                "id": "fba6ce09-6e67-4de2-b73d-87ad821f3d84",
+                "id": "536e6a47-6d9b-4fea-b1c7-ae74fdb19344",
                 "name": "Message ID",
                 "value": "={{ $json.id || $json.messageId || \"\" }}",
                 "type": "string"
               },
               {
-                "id": "66c35b6e-33ec-406a-ad8a-10721aee2965",
+                "id": "14f9c313-92e7-4b1f-a1c5-a2f017123afa",
                 "name": "Notas",
                 "value": "={{ $json.error ? ($json.error.message || JSON.stringify($json.error)) : \"\" }}",
                 "type": "string"
@@ -233,7 +233,7 @@
           360,
           0
         ],
-        "id": "6f4c406e-550a-40e3-9a66-70b65c3ac213",
+        "id": "9e8a356c-244b-458b-a2fc-413a8d4d91f9",
         "name": "Preparar registro"
       },
       {
@@ -361,7 +361,7 @@
           600,
           0
         ],
-        "id": "50cb77b7-e57d-44a7-ae71-53d0b9366375",
+        "id": "4fae0e70-a40e-4cf4-8b74-e9567cca770a",
         "name": "Registrar resultado",
         "credentials": {
           "googleSheetsOAuth2Api": {
@@ -482,7 +482,7 @@
       "executionOrder": "v1",
       "timezone": "America/El_Salvador"
     },
-    "versionId": "165d3f93-c8e0-45f2-81ff-912fefb4107d",
+    "versionId": "4a88ef5a-aa2b-4c12-b24a-6c001f793a27",
     "meta": {
       "templateCredsSetupCompleted": true
     },

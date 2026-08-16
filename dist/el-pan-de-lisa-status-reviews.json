@@ -18,7 +18,7 @@
           -1000,
           0
         ],
-        "id": "2062ce58-c613-4c91-941f-53f69039b0be",
+        "id": "e484df10-aaff-4389-9017-7f332bff5f34",
         "name": "Cada hora"
       },
       {
@@ -48,7 +48,7 @@
           -780,
           -140
         ],
-        "id": "59abef1f-08ba-40ce-b4f8-e29e9ee6f23a",
+        "id": "0ca73b3f-33a3-497e-b016-a5fd41dc4f42",
         "name": "Leer Pedidos",
         "credentials": {
           "googleSheetsOAuth2Api": {
@@ -66,7 +66,7 @@
           -560,
           -140
         ],
-        "id": "f798e633-9d3f-4a41-b78b-b37abe87d9d3",
+        "id": "fa661f98-880c-4491-a469-ca314f6d1765",
         "name": "Marcar Pedidos"
       },
       {
@@ -96,7 +96,7 @@
           -780,
           140
         ],
-        "id": "f71287be-5488-47ba-ad9a-8d64a3211754",
+        "id": "10c490b0-87b2-46c9-862c-626c1ece02c1",
         "name": "Leer Automation Log",
         "credentials": {
           "googleSheetsOAuth2Api": {
@@ -115,7 +115,7 @@
           -560,
           140
         ],
-        "id": "cb3ecbda-fe9c-4af4-9303-f4638c28aa31",
+        "id": "847eb1e4-0d7d-4898-8ffb-82268259ac9e",
         "name": "Marcar Log"
       },
       {
@@ -128,12 +128,12 @@
           -340,
           0
         ],
-        "id": "e80511b3-7e18-4f66-b7e5-fa2427d5873e",
+        "id": "6ec46244-b3a9-4500-9efe-c17369fdc119",
         "name": "Unir Pedidos y Log"
       },
       {
         "parameters": {
-          "jsCode": "const pedidos = items.filter(i => i.json.__kind === 'pedido');\nconst logs = items.filter(i => i.json.__kind === 'log');\nconst sent = new Set(logs.filter(i => i.json.Evento === 'preparation_email' && i.json.Resultado === 'Enviado').map(i => String(i.json['N.º de orden'] ?? '').trim()));\nreturn pedidos.filter(i => i.json.Estado === 'En preparación').map(i => {\n  const key = Object.keys(i.json).find(k => k.normalize('NFC').trim() === 'N.º de orden');\n  const order = String(key ? i.json[key] : '').trim();\n  if (!order || sent.has(order)) return null;\n  const json = { ...i.json, 'N.º de orden': order, NumeroOrden: order };\n  delete json.__kind;\n  return { json };\n}).filter(Boolean);"
+          "jsCode": "const pedidos = items.filter(i => i.json.__kind === 'pedido');\nconst logs = items.filter(i => i.json.__kind === 'log');\nconst sent = new Set(logs.filter(i => i.json.Evento === 'preparation_email' && i.json.Resultado === 'Enviado').map(i => String(i.json['N.º de orden'] ?? '').trim()));\nconst claimed = new Set(sent);\nreturn pedidos.filter(i => i.json.Estado === 'En preparación').map(i => {\n  const key = Object.keys(i.json).find(k => k.normalize('NFC').trim() === 'N.º de orden');\n  const order = String(key ? i.json[key] : '').trim();\n  if (!order || claimed.has(order)) return null;\n  claimed.add(order);\n  const json = { ...i.json, 'N.º de orden': order, NumeroOrden: order };\n  delete json.__kind;\n  return { json };\n}).filter(Boolean);"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -141,7 +141,7 @@
           -120,
           0
         ],
-        "id": "d8cbe2df-f295-4a89-b133-1746ffd9849c",
+        "id": "46d248d9-4215-4ef1-8e83-ddf5dfced441",
         "name": "Seleccionar envíos pendientes"
       },
       {
@@ -158,7 +158,7 @@
           120,
           0
         ],
-        "id": "2e7c6863-8a07-4e4a-b6ab-f7e9b1623926",
+        "id": "c2b8001b-d0c5-4878-9dda-bb6e0e6e580d",
         "name": "Enviar correo",
         "credentials": {
           "gmailOAuth2": {
@@ -172,61 +172,61 @@
           "assignments": {
             "assignments": [
               {
-                "id": "7b736da0-098a-4fc6-8d08-a6fcaa05ddfa",
+                "id": "df9f0b72-5404-422f-8ea5-41cbd3f7958b",
                 "name": "Fecha",
                 "value": "={{ $now.toISO() }}",
                 "type": "string"
               },
               {
-                "id": "cbc37151-baa7-4658-a11c-b1761167a85a",
+                "id": "e4f4bc42-170e-4924-8ea3-6cdd3417b265",
                 "name": "NumeroOrden",
                 "value": "={{ $('Seleccionar envíos pendientes').all()[$itemIndex].json.NumeroOrden }}",
                 "type": "string"
               },
               {
-                "id": "b644b433-fbba-48af-841a-bd2da76dfdac",
+                "id": "afd29853-9f67-4f69-98c7-9a55ef4eb3b9",
                 "name": "N.º de orden",
                 "value": "={{ $('Seleccionar envíos pendientes').all()[$itemIndex].json.NumeroOrden }}",
                 "type": "string"
               },
               {
-                "id": "d802dbff-c618-4d10-9b4b-abd8e4637b0c",
+                "id": "8307dfad-8824-4ccb-be84-6bc913010669",
                 "name": "Evento",
                 "value": "preparation_email",
                 "type": "string"
               },
               {
-                "id": "d36ec3a9-d4f5-42da-b716-a83e09d7e9d3",
+                "id": "700f30b0-3e59-4427-9f3f-720f8dbd686d",
                 "name": "Estado detectado",
                 "value": "={{ $('Seleccionar envíos pendientes').all()[$itemIndex].json.Estado }}",
                 "type": "string"
               },
               {
-                "id": "5c7e2fbb-8362-43e9-8ea5-b3731b0f523a",
+                "id": "56882c9d-90c5-4054-be24-44f7cff8408a",
                 "name": "Correo",
                 "value": "={{ $('Seleccionar envíos pendientes').all()[$itemIndex].json.Correo }}",
                 "type": "string"
               },
               {
-                "id": "aca82db9-5121-4f79-a542-14f9fca5b7cf",
+                "id": "2bdc7ca4-f880-404a-ac56-34c6bf3a980e",
                 "name": "Fecha envío",
                 "value": "={{ $json.error ? \"\" : $now.toISO() }}",
                 "type": "string"
               },
               {
-                "id": "fb1260ee-e613-455c-873c-afe63ff44c31",
+                "id": "f524357e-8fbe-4a2c-9f75-b729d70ea024",
                 "name": "Resultado",
                 "value": "={{ $json.error ? \"Error\" : \"Enviado\" }}",
                 "type": "string"
               },
               {
-                "id": "c301830d-45a3-4e9a-a667-3c559ead6f8a",
+                "id": "a010ccf1-7feb-48cd-944d-dcabe806482b",
                 "name": "Message ID",
                 "value": "={{ $json.id || $json.messageId || \"\" }}",
                 "type": "string"
               },
               {
-                "id": "15b93d7b-890e-4e98-a672-e26f53c15fad",
+                "id": "f34007a9-75e9-4599-aa43-6cae1e6e7e23",
                 "name": "Notas",
                 "value": "={{ $json.error ? ($json.error.message || JSON.stringify($json.error)) : \"\" }}",
                 "type": "string"
@@ -241,7 +241,7 @@
           360,
           0
         ],
-        "id": "c6737509-5935-46f6-9b8f-c0256328ba23",
+        "id": "a2e3cad8-51bc-4a43-9abd-9aa249d6c240",
         "name": "Preparar registro"
       },
       {
@@ -369,7 +369,7 @@
           600,
           0
         ],
-        "id": "0d210bfc-8d59-4b14-9ade-efc9043ddc6f",
+        "id": "574c9157-525c-4857-a67f-ae47365b61aa",
         "name": "Registrar resultado",
         "credentials": {
           "googleSheetsOAuth2Api": {
@@ -490,7 +490,7 @@
       "executionOrder": "v1",
       "timezone": "America/El_Salvador"
     },
-    "versionId": "4118fbaa-2d38-49a2-820b-c32460f15e19",
+    "versionId": "c40b0082-f22b-4e33-95d9-72e1cd3428cc",
     "meta": {
       "templateCredsSetupCompleted": true
     },
@@ -516,7 +516,7 @@
           -1000,
           0
         ],
-        "id": "0958c13d-e6ff-42c1-b257-3cb67977be5b",
+        "id": "4c84cb43-6bec-4f14-9d81-b1924cb7b25f",
         "name": "Cada hora"
       },
       {
@@ -546,7 +546,7 @@
           -780,
           -140
         ],
-        "id": "1317830d-9e9d-4982-b7fc-ad306386788e",
+        "id": "0530b7fa-86a2-4fb0-b26e-51f96842a265",
         "name": "Leer Pedidos",
         "credentials": {
           "googleSheetsOAuth2Api": {
@@ -564,7 +564,7 @@
           -560,
           -140
         ],
-        "id": "a816b2d9-96c2-4ffd-a0cb-1257182ea271",
+        "id": "e2c59e9b-f965-46eb-9da0-bb834c917e64",
         "name": "Marcar Pedidos"
       },
       {
@@ -594,7 +594,7 @@
           -780,
           140
         ],
-        "id": "44fe9335-ca6a-4cea-bf91-9dbdf914d7c0",
+        "id": "ce355275-4aba-4b99-85db-7187809ea73b",
         "name": "Leer Automation Log",
         "credentials": {
           "googleSheetsOAuth2Api": {
@@ -613,7 +613,7 @@
           -560,
           140
         ],
-        "id": "ea92aefa-0a33-4180-90c6-2a820204aa72",
+        "id": "8cc311ba-09aa-482d-8421-85e43e558f50",
         "name": "Marcar Log"
       },
       {
@@ -626,12 +626,12 @@
           -340,
           0
         ],
-        "id": "f6f5ce9a-1e57-499b-b7bd-786ad37c6a61",
+        "id": "7272b039-32d1-4034-a0af-d3bdb31e4854",
         "name": "Unir Pedidos y Log"
       },
       {
         "parameters": {
-          "jsCode": "const pedidos = items.filter(i => i.json.__kind === 'pedido');\nconst logs = items.filter(i => i.json.__kind === 'log');\nconst sent = new Set(logs.filter(i => i.json.Evento === 'ready_email' && i.json.Resultado === 'Enviado').map(i => String(i.json['N.º de orden'] ?? '').trim()));\nreturn pedidos.filter(i => i.json.Estado === 'Listo').map(i => {\n  const key = Object.keys(i.json).find(k => k.normalize('NFC').trim() === 'N.º de orden');\n  const order = String(key ? i.json[key] : '').trim();\n  if (!order || sent.has(order)) return null;\n  const json = { ...i.json, 'N.º de orden': order, NumeroOrden: order };\n  delete json.__kind;\n  return { json };\n}).filter(Boolean);"
+          "jsCode": "const pedidos = items.filter(i => i.json.__kind === 'pedido');\nconst logs = items.filter(i => i.json.__kind === 'log');\nconst sent = new Set(logs.filter(i => i.json.Evento === 'ready_email' && i.json.Resultado === 'Enviado').map(i => String(i.json['N.º de orden'] ?? '').trim()));\nconst claimed = new Set(sent);\nreturn pedidos.filter(i => i.json.Estado === 'Listo').map(i => {\n  const key = Object.keys(i.json).find(k => k.normalize('NFC').trim() === 'N.º de orden');\n  const order = String(key ? i.json[key] : '').trim();\n  if (!order || claimed.has(order)) return null;\n  claimed.add(order);\n  const json = { ...i.json, 'N.º de orden': order, NumeroOrden: order };\n  delete json.__kind;\n  return { json };\n}).filter(Boolean);"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -639,7 +639,7 @@
           -120,
           0
         ],
-        "id": "02c7b40a-b293-4372-ac95-872eeb526c14",
+        "id": "e94a9797-2aff-42f7-a3c3-917eece37980",
         "name": "Seleccionar envíos pendientes"
       },
       {
@@ -656,7 +656,7 @@
           120,
           0
         ],
-        "id": "077887f3-1ba4-4efc-a5d5-caccc8fdce6f",
+        "id": "ef63674e-2180-4034-ab9a-0ed6258774ce",
         "name": "Enviar correo",
         "credentials": {
           "gmailOAuth2": {
@@ -670,61 +670,61 @@
           "assignments": {
             "assignments": [
               {
-                "id": "bf54f629-aafd-463d-a1a9-b91c4713892a",
+                "id": "78b95561-09f9-40aa-8673-81581f553e8b",
                 "name": "Fecha",
                 "value": "={{ $now.toISO() }}",
                 "type": "string"
               },
               {
-                "id": "7b288c71-b71d-48f1-a6d4-67531bda645a",
+                "id": "ceacb901-b65d-4d7a-9a24-fdc3c6f303a2",
                 "name": "NumeroOrden",
                 "value": "={{ $('Seleccionar envíos pendientes').all()[$itemIndex].json.NumeroOrden }}",
                 "type": "string"
               },
               {
-                "id": "2a63672d-4908-4ab0-ae10-c5cc9215d131",
+                "id": "af769ce3-62a3-4d0e-be44-94b7cd0f5515",
                 "name": "N.º de orden",
                 "value": "={{ $('Seleccionar envíos pendientes').all()[$itemIndex].json.NumeroOrden }}",
                 "type": "string"
               },
               {
-                "id": "62e819ac-5ed7-4568-bf1f-588cec9701e8",
+                "id": "1db36970-bfe0-4ac6-81ba-12a8952059cf",
                 "name": "Evento",
                 "value": "ready_email",
                 "type": "string"
               },
               {
-                "id": "6988539a-50ab-4c2b-9072-1ea21d6694d9",
+                "id": "8e4d8a3b-e67e-418e-8813-89582d434f74",
                 "name": "Estado detectado",
                 "value": "={{ $('Seleccionar envíos pendientes').all()[$itemIndex].json.Estado }}",
                 "type": "string"
               },
               {
-                "id": "7eb40845-fcc4-4d8b-b549-443c1ad094e0",
+                "id": "fba4e6a8-3e06-4eaa-aaf0-828292a1fd75",
                 "name": "Correo",
                 "value": "={{ $('Seleccionar envíos pendientes').all()[$itemIndex].json.Correo }}",
                 "type": "string"
               },
               {
-                "id": "942ce3aa-42a0-41dc-813b-4cc15412ed98",
+                "id": "9fe07d7c-7050-41c9-8f85-44324c3bfdce",
                 "name": "Fecha envío",
                 "value": "={{ $json.error ? \"\" : $now.toISO() }}",
                 "type": "string"
               },
               {
-                "id": "ca6ed04b-c397-4179-8ee3-4e52116b89ea",
+                "id": "0bdab5d8-d7db-43bd-aff4-ead9b109f791",
                 "name": "Resultado",
                 "value": "={{ $json.error ? \"Error\" : \"Enviado\" }}",
                 "type": "string"
               },
               {
-                "id": "821a5926-e999-49b4-82f7-c49f4931b102",
+                "id": "a3c7a37b-9071-416f-9cba-60b21d5e7dd5",
                 "name": "Message ID",
                 "value": "={{ $json.id || $json.messageId || \"\" }}",
                 "type": "string"
               },
               {
-                "id": "e99c97b8-5179-4350-a881-cb4800a786de",
+                "id": "ab5acfad-b304-44c4-85cb-c4c7cde6f545",
                 "name": "Notas",
                 "value": "={{ $json.error ? ($json.error.message || JSON.stringify($json.error)) : \"\" }}",
                 "type": "string"
@@ -739,7 +739,7 @@
           360,
           0
         ],
-        "id": "97156bef-090c-41ec-9a1b-772879800480",
+        "id": "85ab8ab2-fbce-4bb8-a07e-8a8a5ee5f827",
         "name": "Preparar registro"
       },
       {
@@ -867,7 +867,7 @@
           600,
           0
         ],
-        "id": "ba3ee41b-84bd-41ad-b142-238f07c523a1",
+        "id": "67c253d9-3ead-4e6d-b450-c7e5d32fc7b9",
         "name": "Registrar resultado",
         "credentials": {
           "googleSheetsOAuth2Api": {
@@ -988,7 +988,7 @@
       "executionOrder": "v1",
       "timezone": "America/El_Salvador"
     },
-    "versionId": "2bf79954-db20-489d-b49a-128c7acb2af5",
+    "versionId": "ab6ca5e4-ed4b-4dab-a57e-921f9403e7e0",
     "meta": {
       "templateCredsSetupCompleted": true
     },
@@ -1014,7 +1014,7 @@
           -1000,
           0
         ],
-        "id": "fb0ee512-746e-4258-a19b-0997542cfc57",
+        "id": "f2b22659-6cad-4899-bbec-1f4f8c982d39",
         "name": "Cada hora"
       },
       {
@@ -1044,7 +1044,7 @@
           -780,
           -140
         ],
-        "id": "319e513b-3993-471f-93f6-19354f1b6676",
+        "id": "faf00ebd-1598-4301-8394-52c915252562",
         "name": "Leer Pedidos",
         "credentials": {
           "googleSheetsOAuth2Api": {
@@ -1062,7 +1062,7 @@
           -560,
           -140
         ],
-        "id": "051d10e9-d261-44c1-a108-42af324f153a",
+        "id": "fabd32e7-bbac-47a4-96ca-2b0fbc14cd36",
         "name": "Marcar Pedidos"
       },
       {
@@ -1092,7 +1092,7 @@
           -780,
           140
         ],
-        "id": "32d145b5-1324-4e79-ad62-6bd439b31dba",
+        "id": "cccb19ff-9b2b-4b26-9e63-181f60bee136",
         "name": "Leer Automation Log",
         "credentials": {
           "googleSheetsOAuth2Api": {
@@ -1111,7 +1111,7 @@
           -560,
           140
         ],
-        "id": "a69f231e-4f83-4222-a297-fed8f5bc3420",
+        "id": "2b513f1a-a86c-4953-a6ea-8a08364fdf31",
         "name": "Marcar Log"
       },
       {
@@ -1124,12 +1124,12 @@
           -340,
           0
         ],
-        "id": "d24185be-9ee8-46c7-a0ca-ffe80beeda9a",
+        "id": "ccfb75b5-68a2-4ead-944a-fffa75c2d5d1",
         "name": "Unir Pedidos y Log"
       },
       {
         "parameters": {
-          "jsCode": "const pedidos = items.filter(i => i.json.__kind === 'pedido');\nconst logs = items.filter(i => i.json.__kind === 'log');\nconst existing = new Set(logs.filter(i => i.json.Evento === 'review_request' && ['Pendiente','Enviado'].includes(i.json.Resultado)).map(i => String(i.json['N.º de orden'] ?? '').trim()));\nreturn pedidos.filter(i => i.json.Estado === 'Entregado').map(i => {\n  const key = Object.keys(i.json).find(k => k.normalize('NFC').trim() === 'N.º de orden');\n  const order = String(key ? i.json[key] : '').trim();\n  if (!order || existing.has(order)) return null;\n  return { json: { Fecha: new Date().toISOString(), 'N.º de orden': order, Evento: 'review_request', 'Estado detectado': 'Entregado', Correo: i.json.Correo ?? '', 'Fecha envío': '', Resultado: 'Pendiente', 'Message ID': '', Notas: 'Esperando 48 horas antes de solicitar review' } };\n}).filter(Boolean);"
+          "jsCode": "const pedidos = items.filter(i => i.json.__kind === 'pedido');\nconst logs = items.filter(i => i.json.__kind === 'log');\nconst existing = new Set(logs.filter(i => i.json.Evento === 'review_request' && ['Pendiente','Enviado'].includes(i.json.Resultado)).map(i => String(i.json['N.º de orden'] ?? '').trim()));\nconst claimed = new Set(existing);\nreturn pedidos.filter(i => i.json.Estado === 'Entregado').map(i => {\n  const key = Object.keys(i.json).find(k => k.normalize('NFC').trim() === 'N.º de orden');\n  const order = String(key ? i.json[key] : '').trim();\n  if (!order || claimed.has(order)) return null;\n  claimed.add(order);\n  return { json: { Fecha: new Date().toISOString(), 'N.º de orden': order, Evento: 'review_request', 'Estado detectado': 'Entregado', Correo: i.json.Correo ?? '', 'Fecha envío': '', Resultado: 'Pendiente', 'Message ID': '', Notas: 'Esperando 48 horas antes de solicitar review' } };\n}).filter(Boolean);"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -1137,7 +1137,7 @@
           -120,
           0
         ],
-        "id": "b6bf6800-9834-465d-9619-3c3b37e95259",
+        "id": "a743d994-5846-4d17-b09c-9472e589dd17",
         "name": "Seleccionar entregados nuevos"
       },
       {
@@ -1265,7 +1265,7 @@
           120,
           0
         ],
-        "id": "8478fadc-3b0a-4caf-b0a9-8fe120ebcdc9",
+        "id": "7f437051-d7dd-417e-b42c-5bff96664933",
         "name": "Registrar espera",
         "credentials": {
           "googleSheetsOAuth2Api": {
@@ -1364,7 +1364,7 @@
       "executionOrder": "v1",
       "timezone": "America/El_Salvador"
     },
-    "versionId": "8a23a8a4-63f3-400d-8acb-10614a7357b1",
+    "versionId": "d17169e6-4227-495e-a82a-3dda351eaa00",
     "meta": {
       "templateCredsSetupCompleted": true
     },
@@ -1390,7 +1390,7 @@
           -1000,
           0
         ],
-        "id": "fe9403d8-6ebf-4fcd-9da8-fc1ffb5c06f5",
+        "id": "f10c5cb4-acd0-4b1c-8d26-b7ec1852a2b9",
         "name": "Cada hora"
       },
       {
@@ -1420,7 +1420,7 @@
           -780,
           -140
         ],
-        "id": "0f627ff6-afad-4990-a25c-52a618c1b3d1",
+        "id": "f6cd3ec4-d73f-4516-8095-a24b23947805",
         "name": "Leer Pedidos",
         "credentials": {
           "googleSheetsOAuth2Api": {
@@ -1438,7 +1438,7 @@
           -560,
           -140
         ],
-        "id": "9acebb97-bc32-4e56-a129-7b2450cfe39b",
+        "id": "a97b5174-7cfe-4b0d-b676-2c3809992cb3",
         "name": "Marcar Pedidos"
       },
       {
@@ -1468,7 +1468,7 @@
           -780,
           140
         ],
-        "id": "bc0e32e7-c46b-4517-95f0-b5edfbd58723",
+        "id": "7e305efa-2dc4-4419-b715-8d1498dfa28c",
         "name": "Leer Automation Log",
         "credentials": {
           "googleSheetsOAuth2Api": {
@@ -1487,7 +1487,7 @@
           -560,
           140
         ],
-        "id": "fd081734-759b-48c3-88b2-5a9db86fcc5e",
+        "id": "8eea78fe-4061-4cdd-a3ad-7c27cc46a24e",
         "name": "Marcar Log"
       },
       {
@@ -1500,12 +1500,12 @@
           -340,
           0
         ],
-        "id": "a0a4d9af-a3ee-4153-9944-e7b2a87456dc",
+        "id": "0daa624c-22c5-4236-b1dd-e5631c7bad15",
         "name": "Unir Pedidos y Log"
       },
       {
         "parameters": {
-          "jsCode": "const pedidos = items.filter(i => i.json.__kind === 'pedido');\nconst logs = items.filter(i => i.json.__kind === 'log');\nconst sent = new Set(logs.filter(i => i.json.Evento === 'review_request' && i.json.Resultado === 'Enviado').map(i => String(i.json['N.º de orden'] ?? '').trim()));\nconst cutoff = Date.now() - 48 * 60 * 60 * 1000;\nconst pending = logs.filter(i => i.json.Evento === 'review_request' && i.json.Resultado === 'Pendiente' && Date.parse(i.json.Fecha) <= cutoff);\nconst byOrder = new Map(pedidos.map(i => [String(i.json['N.º de orden'] ?? '').trim(), i.json]));\nreturn pending.map(i => {\n  const order = String(i.json['N.º de orden'] ?? '').trim();\n  const pedido = byOrder.get(order);\n  if (!pedido || pedido.Estado !== 'Entregado' || sent.has(order)) return null;\n  const products = [];\n  if (Number(pedido['Cantidad Pan Blanco'] ?? 0) > 0) products.push('Pan Blanco');\n  if (Number(pedido['Cantidad Pan Semi Integral'] ?? 0) > 0) products.push('Pan Semi Integral');\n  const product = products.join(' + ') || 'Producto no identificado';\n  const query = ['usp=pp_url','entry.950326924='+encodeURIComponent(order),'entry.1893454218='+encodeURIComponent(pedido.Nombre ?? ''),'entry.1903981963='+encodeURIComponent(product),'entry.732910652='+encodeURIComponent(pedido.Correo ?? '')].join('&');\n  return { json: { ...pedido, NumeroOrden: order, Producto: product, ReviewURL: 'https://docs.google.com/forms/d/e/example-form-id/viewform?' + query } };\n}).filter(Boolean);"
+          "jsCode": "const pedidos = items.filter(i => i.json.__kind === 'pedido');\nconst logs = items.filter(i => i.json.__kind === 'log');\nconst sent = new Set(logs.filter(i => i.json.Evento === 'review_request' && i.json.Resultado === 'Enviado').map(i => String(i.json['N.º de orden'] ?? '').trim()));\nconst cutoff = Date.now() - 48 * 60 * 60 * 1000;\nconst pending = logs.filter(i => i.json.Evento === 'review_request' && i.json.Resultado === 'Pendiente' && Date.parse(i.json.Fecha) <= cutoff);\nconst byOrder = new Map(pedidos.map(i => [String(i.json['N.º de orden'] ?? '').trim(), i.json]));\nconst claimed = new Set(sent);\nreturn pending.map(i => {\n  const order = String(i.json['N.º de orden'] ?? '').trim();\n  const pedido = byOrder.get(order);\n  if (!pedido || pedido.Estado !== 'Entregado' || claimed.has(order)) return null;\n  claimed.add(order);\n  const products = [];\n  if (Number(pedido['Cantidad Pan Blanco'] ?? 0) > 0) products.push('Pan Blanco');\n  if (Number(pedido['Cantidad Pan Semi Integral'] ?? 0) > 0) products.push('Pan Semi Integral');\n  const product = products.join(' + ') || 'Producto no identificado';\n  const query = ['usp=pp_url','entry.950326924='+encodeURIComponent(order),'entry.1893454218='+encodeURIComponent(pedido.Nombre ?? ''),'entry.1903981963='+encodeURIComponent(product),'entry.732910652='+encodeURIComponent(pedido.Correo ?? '')].join('&');\n  return { json: { ...pedido, NumeroOrden: order, Producto: product, ReviewURL: 'https://docs.google.com/forms/d/e/example-form-id/viewform?' + query } };\n}).filter(Boolean);"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -1513,7 +1513,7 @@
           -120,
           0
         ],
-        "id": "665ee568-eebc-4812-b975-bae2aa94d143",
+        "id": "59c33815-7e4c-48df-9ec0-0ae889604ce3",
         "name": "Seleccionar reviews vencidos"
       },
       {
@@ -1530,7 +1530,7 @@
           120,
           0
         ],
-        "id": "a8f2d090-13e5-4cc3-b5ee-8370c0e95d2a",
+        "id": "93f41f22-e585-4252-b2b4-fcaea3d09316",
         "name": "Enviar solicitud de review",
         "credentials": {
           "gmailOAuth2": {
@@ -1544,61 +1544,61 @@
           "assignments": {
             "assignments": [
               {
-                "id": "fb4e436e-4df2-4508-bfbc-9316c2b97acd",
+                "id": "7c16a881-55be-4e79-9dcc-dac2f2bd8320",
                 "name": "Fecha",
                 "value": "={{ $now.toISO() }}",
                 "type": "string"
               },
               {
-                "id": "4cd8c456-5361-49a2-a6a6-f5516af6a353",
+                "id": "4180b3cc-9019-499a-a34c-4ba6a57ea555",
                 "name": "NumeroOrden",
                 "value": "={{ $('Seleccionar reviews vencidos').all()[$itemIndex].json.NumeroOrden }}",
                 "type": "string"
               },
               {
-                "id": "f7ff65ec-d8a1-4fab-8a6c-b2cf0a7c0268",
+                "id": "aa8fdfab-896e-4e02-ac68-b8c34cc27a1e",
                 "name": "N.º de orden",
                 "value": "={{ $('Seleccionar reviews vencidos').all()[$itemIndex].json.NumeroOrden }}",
                 "type": "string"
               },
               {
-                "id": "20638b28-5a42-4628-a9b9-e493f3f6b09e",
+                "id": "b6f45cf9-a5ed-43a5-803e-7a0bb03545c9",
                 "name": "Evento",
                 "value": "review_request",
                 "type": "string"
               },
               {
-                "id": "54c5b9d3-0b3d-4370-8dd2-309d08808284",
+                "id": "440be991-1ef4-48a8-a482-0a664b9bc9f2",
                 "name": "Estado detectado",
                 "value": "={{ $('Seleccionar reviews vencidos').all()[$itemIndex].json.Estado }}",
                 "type": "string"
               },
               {
-                "id": "437ca12b-6375-42b5-9d73-3f3daea3564f",
+                "id": "5a0571df-fdd6-4646-bd42-813c58a03575",
                 "name": "Correo",
                 "value": "={{ $('Seleccionar reviews vencidos').all()[$itemIndex].json.Correo }}",
                 "type": "string"
               },
               {
-                "id": "c6f7722b-9f86-4076-b778-03c9530ce432",
+                "id": "bee3786d-96f1-42fe-ae43-f6fce869d983",
                 "name": "Fecha envío",
                 "value": "={{ $json.error ? \"\" : $now.toISO() }}",
                 "type": "string"
               },
               {
-                "id": "bb32bc88-d406-4f07-8747-7110bfc83b82",
+                "id": "e36e9b8b-deaf-4f0d-acbe-aa5d06ffdf2d",
                 "name": "Resultado",
                 "value": "={{ $json.error ? \"Error\" : \"Enviado\" }}",
                 "type": "string"
               },
               {
-                "id": "fba6ce09-6e67-4de2-b73d-87ad821f3d84",
+                "id": "536e6a47-6d9b-4fea-b1c7-ae74fdb19344",
                 "name": "Message ID",
                 "value": "={{ $json.id || $json.messageId || \"\" }}",
                 "type": "string"
               },
               {
-                "id": "66c35b6e-33ec-406a-ad8a-10721aee2965",
+                "id": "14f9c313-92e7-4b1f-a1c5-a2f017123afa",
                 "name": "Notas",
                 "value": "={{ $json.error ? ($json.error.message || JSON.stringify($json.error)) : \"\" }}",
                 "type": "string"
@@ -1613,7 +1613,7 @@
           360,
           0
         ],
-        "id": "6f4c406e-550a-40e3-9a66-70b65c3ac213",
+        "id": "9e8a356c-244b-458b-a2fc-413a8d4d91f9",
         "name": "Preparar registro"
       },
       {
@@ -1741,7 +1741,7 @@
           600,
           0
         ],
-        "id": "50cb77b7-e57d-44a7-ae71-53d0b9366375",
+        "id": "4fae0e70-a40e-4cf4-8b74-e9567cca770a",
         "name": "Registrar resultado",
         "credentials": {
           "googleSheetsOAuth2Api": {
@@ -1862,7 +1862,7 @@
       "executionOrder": "v1",
       "timezone": "America/El_Salvador"
     },
-    "versionId": "165d3f93-c8e0-45f2-81ff-912fefb4107d",
+    "versionId": "4a88ef5a-aa2b-4c12-b24a-6c001f793a27",
     "meta": {
       "templateCredsSetupCompleted": true
     },

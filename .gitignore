@@ -1,5 +1,6 @@
 # Secrets
 .env
+automation.env
 .DS_Store
 **/.env
 *.key
