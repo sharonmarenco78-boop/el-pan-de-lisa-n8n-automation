@@ -1,0 +1,492 @@
+[
+  {
+    "name": "PRUEBA CONTROLADA — Solicitud de review — EXAMPLE-ORDER",
+    "nodes": [
+      {
+        "parameters": {},
+        "type": "n8n-nodes-base.manualTrigger",
+        "typeVersion": 1,
+        "position": [
+          -1000,
+          0
+        ],
+        "id": "fe9403d8-6ebf-4fcd-9da8-fc1ffb5c06f5",
+        "name": "Ejecutar prueba manual"
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "value": "example-spreadsheet-id",
+            "mode": "list",
+            "cachedResultName": "El Pan de Lisa - Control de Pedidos",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/example-spreadsheet-id/edit"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": 111111,
+            "mode": "list",
+            "cachedResultName": "Pedidos",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/example-spreadsheet-id/edit#gid=111111"
+          },
+          "filtersUI": {
+            "values": []
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          -780,
+          -140
+        ],
+        "id": "0f627ff6-afad-4990-a25c-52a618c1b3d1",
+        "name": "Leer Pedidos",
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "return items.map(item => ({ json: { ...item.json, __kind: 'pedido' } }));"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -560,
+          -140
+        ],
+        "id": "9acebb97-bc32-4e56-a129-7b2450cfe39b",
+        "name": "Marcar Pedidos"
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "value": "example-spreadsheet-id",
+            "mode": "list",
+            "cachedResultName": "El Pan de Lisa - Control de Pedidos",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/example-spreadsheet-id/edit"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": 222222,
+            "mode": "list",
+            "cachedResultName": "Automation Log",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/example-spreadsheet-id/edit#gid=222222"
+          },
+          "filtersUI": {
+            "values": []
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          -780,
+          140
+        ],
+        "id": "bc0e32e7-c46b-4517-95f0-b5edfbd58723",
+        "name": "Leer Automation Log",
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "name": "Google Sheets account"
+          }
+        },
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "jsCode": "return items.map(item => ({ json: { ...item.json, __kind: 'log' } }));"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -560,
+          140
+        ],
+        "id": "fd081734-759b-48c3-88b2-5a9db86fcc5e",
+        "name": "Marcar Log"
+      },
+      {
+        "parameters": {
+          "mode": "append"
+        },
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 3.2,
+        "position": [
+          -340,
+          0
+        ],
+        "id": "a0a4d9af-a3ee-4153-9944-e7b2a87456dc",
+        "name": "Unir Pedidos y Log"
+      },
+      {
+        "parameters": {
+          "jsCode": "const pedidos = items.filter(i => i.json.__kind === 'pedido');\nconst logs = items.filter(i => i.json.__kind === 'log');\nconst sent = new Set(logs.filter(i => i.json.Evento === 'review_request' && i.json.Resultado === 'Enviado').map(i => String(i.json['N.º de orden'] ?? '').trim()));\nconst cutoff = Date.now() - 48 * 60 * 60 * 1000;\nconst pending = logs.filter(i => i.json.Evento === 'review_request' && i.json.Resultado === 'Pendiente' && Date.parse(i.json.Fecha) <= cutoff);\nconst byOrder = new Map(pedidos.map(i => [String(i.json['N.º de orden'] ?? '').trim(), i.json]));\nreturn pending.map(i => {\n  const order = String(i.json['N.º de orden'] ?? '').trim();\n  const pedido = byOrder.get(order);\n  if (!pedido || pedido.Estado !== 'Entregado' || sent.has(order)) return null;\n  const products = [];\n  if (Number(pedido['Cantidad Pan Blanco'] ?? 0) > 0) products.push('Pan Blanco');\n  if (Number(pedido['Cantidad Pan Semi Integral'] ?? 0) > 0) products.push('Pan Semi Integral');\n  const product = products.join(' + ') || 'Producto no identificado';\n  const query = ['usp=pp_url','entry.950326924='+encodeURIComponent(order),'entry.1893454218='+encodeURIComponent(pedido.Nombre ?? ''),'entry.1903981963='+encodeURIComponent(product),'entry.732910652='+encodeURIComponent(pedido.Correo ?? '')].join('&');\n  return { json: { ...pedido, NumeroOrden: order, Producto: product, ReviewURL: 'https://docs.google.com/forms/d/e/example-form-id/viewform?' + query } };\n}).filter(Boolean).filter(i => i.json.NumeroOrden === \"EXAMPLE-ORDER\");"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -120,
+          0
+        ],
+        "id": "665ee568-eebc-4812-b975-bae2aa94d143",
+        "name": "Seleccionar reviews vencidos"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.Correo }}",
+          "subject": "=PRUEBA — ¿Cómo estuvo tu pedido? — Pedido {{ $json.NumeroOrden }}",
+          "emailType": "html",
+          "message": "=<div style=\"font-family:Arial,sans-serif;max-width:640px;margin:auto;color:#5b2b18\">\n  <h1>El Pan de Lisa</h1>\n  <h2>¿Cómo estuvo tu pedido?</h2>\n  <p>Hola {{ $json.Nombre }}, nos encantaría conocer tu opinión.</p>\n  <p><a href=\"{{ $json.ReviewURL }}\">Dejar una reseña</a></p>\n  <p><strong>Pedido:</strong> {{ $json.NumeroOrden }}</p>\n</div>\n",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          120,
+          0
+        ],
+        "id": "a8f2d090-13e5-4cc3-b5ee-8370c0e95d2a",
+        "name": "Enviar prueba de review",
+        "credentials": {
+          "gmailOAuth2": {
+            "name": "Gmail account"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "fb4e436e-4df2-4508-bfbc-9316c2b97acd",
+                "name": "Fecha",
+                "value": "={{ $now.toISO() }}",
+                "type": "string"
+              },
+              {
+                "id": "4cd8c456-5361-49a2-a6a6-f5516af6a353",
+                "name": "NumeroOrden",
+                "value": "={{ $('Seleccionar reviews vencidos').all()[$itemIndex].json.NumeroOrden }}",
+                "type": "string"
+              },
+              {
+                "id": "f7ff65ec-d8a1-4fab-8a6c-b2cf0a7c0268",
+                "name": "N.º de orden",
+                "value": "={{ $('Seleccionar reviews vencidos').all()[$itemIndex].json.NumeroOrden }}",
+                "type": "string"
+              },
+              {
+                "id": "20638b28-5a42-4628-a9b9-e493f3f6b09e",
+                "name": "Evento",
+                "value": "review_request_test_v2",
+                "type": "string"
+              },
+              {
+                "id": "54c5b9d3-0b3d-4370-8dd2-309d08808284",
+                "name": "Estado detectado",
+                "value": "={{ $('Seleccionar reviews vencidos').all()[$itemIndex].json.Estado }}",
+                "type": "string"
+              },
+              {
+                "id": "437ca12b-6375-42b5-9d73-3f3daea3564f",
+                "name": "Correo",
+                "value": "={{ $('Seleccionar reviews vencidos').all()[$itemIndex].json.Correo }}",
+                "type": "string"
+              },
+              {
+                "id": "c6f7722b-9f86-4076-b778-03c9530ce432",
+                "name": "Fecha envío",
+                "value": "={{ $json.error ? \"\" : $now.toISO() }}",
+                "type": "string"
+              },
+              {
+                "id": "bb32bc88-d406-4f07-8747-7110bfc83b82",
+                "name": "Resultado",
+                "value": "={{ $json.error ? \"Error\" : \"Enviado\" }}",
+                "type": "string"
+              },
+              {
+                "id": "fba6ce09-6e67-4de2-b73d-87ad821f3d84",
+                "name": "Message ID",
+                "value": "={{ $json.id || $json.messageId || \"\" }}",
+                "type": "string"
+              },
+              {
+                "id": "66c35b6e-33ec-406a-ad8a-10721aee2965",
+                "name": "Notas",
+                "value": "={{ $json.error ? ($json.error.message || JSON.stringify($json.error)) : \"\" }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          360,
+          0
+        ],
+        "id": "6f4c406e-550a-40e3-9a66-70b65c3ac213",
+        "name": "Preparar registro"
+      },
+      {
+        "parameters": {
+          "operation": "append",
+          "documentId": {
+            "__rl": true,
+            "value": "example-spreadsheet-id",
+            "mode": "list",
+            "cachedResultName": "El Pan de Lisa - Control de Pedidos",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/example-spreadsheet-id/edit"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": 222222,
+            "mode": "list",
+            "cachedResultName": "Automation Log",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/example-spreadsheet-id/edit#gid=222222"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "Fecha": "={{ $json[\"Fecha\"] }}",
+              "N.º de orden": "={{ $json.NumeroOrden || $json[\"N.º de orden\"] || \"\" }}",
+              "Evento": "={{ $json[\"Evento\"] }}",
+              "Estado detectado": "={{ $json[\"Estado detectado\"] }}",
+              "Correo": "={{ $json[\"Correo\"] }}",
+              "Fecha envío": "={{ $json[\"Fecha envío\"] }}",
+              "Resultado": "={{ $json[\"Resultado\"] }}",
+              "Message ID": "={{ $json[\"Message ID\"] }}",
+              "Notas": "={{ $json[\"Notas\"] }}"
+            },
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "Fecha",
+                "displayName": "Fecha",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "N.º de orden",
+                "displayName": "N.º de orden",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "Evento",
+                "displayName": "Evento",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "Estado detectado",
+                "displayName": "Estado detectado",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "Correo",
+                "displayName": "Correo",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "Fecha envío",
+                "displayName": "Fecha envío",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "Resultado",
+                "displayName": "Resultado",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "Message ID",
+                "displayName": "Message ID",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "Notas",
+                "displayName": "Notas",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": false
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          600,
+          0
+        ],
+        "id": "50cb77b7-e57d-44a7-ae71-53d0b9366375",
+        "name": "Registrar resultado",
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "name": "Google Sheets account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Leer Pedidos": {
+        "main": [
+          [
+            {
+              "node": "Marcar Pedidos",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Marcar Pedidos": {
+        "main": [
+          [
+            {
+              "node": "Unir Pedidos y Log",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Leer Automation Log": {
+        "main": [
+          [
+            {
+              "node": "Marcar Log",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Marcar Log": {
+        "main": [
+          [
+            {
+              "node": "Unir Pedidos y Log",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Unir Pedidos y Log": {
+        "main": [
+          [
+            {
+              "node": "Seleccionar reviews vencidos",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Seleccionar reviews vencidos": {
+        "main": [
+          [
+            {
+              "node": "Enviar prueba de review",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Preparar registro": {
+        "main": [
+          [
+            {
+              "node": "Registrar resultado",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ejecutar prueba manual": {
+        "main": [
+          [
+            {
+              "node": "Leer Pedidos",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Leer Automation Log",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Enviar prueba de review": {
+        "main": [
+          [
+            {
+              "node": "Preparar registro",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "active": false,
+    "settings": {
+      "executionOrder": "v1",
+      "timezone": "America/El_Salvador"
+    },
+    "versionId": "165d3f93-c8e0-45f2-81ff-912fefb4107d",
+    "meta": {
+      "templateCredsSetupCompleted": true
+    },
+    "tags": [],
+    "id": "EPLControlledReviewTest"
+  }
+]

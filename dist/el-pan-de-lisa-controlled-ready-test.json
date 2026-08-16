@@ -1,0 +1,492 @@
+[
+  {
+    "name": "PRUEBA CORRECCIÓN — Listo — EXAMPLE-ORDER",
+    "nodes": [
+      {
+        "parameters": {},
+        "type": "n8n-nodes-base.manualTrigger",
+        "typeVersion": 1,
+        "position": [
+          -1000,
+          0
+        ],
+        "id": "0958c13d-e6ff-42c1-b257-3cb67977be5b",
+        "name": "Ejecutar prueba manual"
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "value": "example-spreadsheet-id",
+            "mode": "list",
+            "cachedResultName": "El Pan de Lisa - Control de Pedidos",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/example-spreadsheet-id/edit"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": 111111,
+            "mode": "list",
+            "cachedResultName": "Pedidos",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/example-spreadsheet-id/edit#gid=111111"
+          },
+          "filtersUI": {
+            "values": []
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          -780,
+          -140
+        ],
+        "id": "1317830d-9e9d-4982-b7fc-ad306386788e",
+        "name": "Leer Pedidos",
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "return items.map(item => ({ json: { ...item.json, __kind: 'pedido' } }));"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -560,
+          -140
+        ],
+        "id": "a816b2d9-96c2-4ffd-a0cb-1257182ea271",
+        "name": "Marcar Pedidos"
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "value": "example-spreadsheet-id",
+            "mode": "list",
+            "cachedResultName": "El Pan de Lisa - Control de Pedidos",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/example-spreadsheet-id/edit"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": 222222,
+            "mode": "list",
+            "cachedResultName": "Automation Log",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/example-spreadsheet-id/edit#gid=222222"
+          },
+          "filtersUI": {
+            "values": []
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          -780,
+          140
+        ],
+        "id": "44fe9335-ca6a-4cea-bf91-9dbdf914d7c0",
+        "name": "Leer Automation Log",
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "name": "Google Sheets account"
+          }
+        },
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "jsCode": "return items.map(item => ({ json: { ...item.json, __kind: 'log' } }));"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -560,
+          140
+        ],
+        "id": "ea92aefa-0a33-4180-90c6-2a820204aa72",
+        "name": "Marcar Log"
+      },
+      {
+        "parameters": {
+          "mode": "append"
+        },
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 3.2,
+        "position": [
+          -340,
+          0
+        ],
+        "id": "f6f5ce9a-1e57-499b-b7bd-786ad37c6a61",
+        "name": "Unir Pedidos y Log"
+      },
+      {
+        "parameters": {
+          "jsCode": "const pedidos = items.filter(i => i.json.__kind === 'pedido');\nconst logs = items.filter(i => i.json.__kind === 'log');\nconst sent = new Set(logs.filter(i => i.json.Evento === 'ready_email' && i.json.Resultado === 'Enviado').map(i => String(i.json['N.º de orden'] ?? '').trim()));\nreturn pedidos.filter(i => i.json.Estado === 'Listo').map(i => {\n  const key = Object.keys(i.json).find(k => k.normalize('NFC').trim() === 'N.º de orden');\n  const order = String(key ? i.json[key] : '').trim();\n  if (!order || sent.has(order)) return null;\n  const json = { ...i.json, 'N.º de orden': order, NumeroOrden: order };\n  delete json.__kind;\n  return { json };\n}).filter(Boolean).filter(i => i.json.NumeroOrden === \"EXAMPLE-ORDER\");"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -120,
+          0
+        ],
+        "id": "02c7b40a-b293-4372-ac95-872eeb526c14",
+        "name": "Seleccionar envíos pendientes"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.Correo }}",
+          "subject": "=PRUEBA CORRECCIÓN — Listo — Pedido {{ $json.NumeroOrden }}",
+          "emailType": "html",
+          "message": "=<div style=\"font-family:Arial,sans-serif;max-width:640px;margin:auto;color:#5b2b18\">\n  <h1>El Pan de Lisa</h1>\n  <h2>✅ ¡Tu pedido está listo!</h2>\n  <p>Hola {{ $json.Nombre }}, tu pedido ya está listo.</p>\n  <p><strong>Pedido:</strong> {{ $json.NumeroOrden }}</p>\n</div>\n",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          120,
+          0
+        ],
+        "id": "077887f3-1ba4-4efc-a5d5-caccc8fdce6f",
+        "name": "Enviar prueba de correo",
+        "credentials": {
+          "gmailOAuth2": {
+            "name": "Gmail account"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "bf54f629-aafd-463d-a1a9-b91c4713892a",
+                "name": "Fecha",
+                "value": "={{ $now.toISO() }}",
+                "type": "string"
+              },
+              {
+                "id": "7b288c71-b71d-48f1-a6d4-67531bda645a",
+                "name": "NumeroOrden",
+                "value": "={{ $('Seleccionar envíos pendientes').all()[$itemIndex].json.NumeroOrden }}",
+                "type": "string"
+              },
+              {
+                "id": "2a63672d-4908-4ab0-ae10-c5cc9215d131",
+                "name": "N.º de orden",
+                "value": "={{ $('Seleccionar envíos pendientes').all()[$itemIndex].json.NumeroOrden }}",
+                "type": "string"
+              },
+              {
+                "id": "62e819ac-5ed7-4568-bf1f-588cec9701e8",
+                "name": "Evento",
+                "value": "ready_email_test_v2",
+                "type": "string"
+              },
+              {
+                "id": "6988539a-50ab-4c2b-9072-1ea21d6694d9",
+                "name": "Estado detectado",
+                "value": "={{ $('Seleccionar envíos pendientes').all()[$itemIndex].json.Estado }}",
+                "type": "string"
+              },
+              {
+                "id": "7eb40845-fcc4-4d8b-b549-443c1ad094e0",
+                "name": "Correo",
+                "value": "={{ $('Seleccionar envíos pendientes').all()[$itemIndex].json.Correo }}",
+                "type": "string"
+              },
+              {
+                "id": "942ce3aa-42a0-41dc-813b-4cc15412ed98",
+                "name": "Fecha envío",
+                "value": "={{ $json.error ? \"\" : $now.toISO() }}",
+                "type": "string"
+              },
+              {
+                "id": "ca6ed04b-c397-4179-8ee3-4e52116b89ea",
+                "name": "Resultado",
+                "value": "={{ $json.error ? \"Error\" : \"Enviado\" }}",
+                "type": "string"
+              },
+              {
+                "id": "821a5926-e999-49b4-82f7-c49f4931b102",
+                "name": "Message ID",
+                "value": "={{ $json.id || $json.messageId || \"\" }}",
+                "type": "string"
+              },
+              {
+                "id": "e99c97b8-5179-4350-a881-cb4800a786de",
+                "name": "Notas",
+                "value": "={{ $json.error ? ($json.error.message || JSON.stringify($json.error)) : \"\" }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          360,
+          0
+        ],
+        "id": "97156bef-090c-41ec-9a1b-772879800480",
+        "name": "Preparar registro"
+      },
+      {
+        "parameters": {
+          "operation": "append",
+          "documentId": {
+            "__rl": true,
+            "value": "example-spreadsheet-id",
+            "mode": "list",
+            "cachedResultName": "El Pan de Lisa - Control de Pedidos",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/example-spreadsheet-id/edit"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": 222222,
+            "mode": "list",
+            "cachedResultName": "Automation Log",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/example-spreadsheet-id/edit#gid=222222"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "Fecha": "={{ $json[\"Fecha\"] }}",
+              "N.º de orden": "={{ $json.NumeroOrden || $json[\"N.º de orden\"] || \"\" }}",
+              "Evento": "={{ $json[\"Evento\"] }}",
+              "Estado detectado": "={{ $json[\"Estado detectado\"] }}",
+              "Correo": "={{ $json[\"Correo\"] }}",
+              "Fecha envío": "={{ $json[\"Fecha envío\"] }}",
+              "Resultado": "={{ $json[\"Resultado\"] }}",
+              "Message ID": "={{ $json[\"Message ID\"] }}",
+              "Notas": "={{ $json[\"Notas\"] }}"
+            },
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "Fecha",
+                "displayName": "Fecha",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "N.º de orden",
+                "displayName": "N.º de orden",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "Evento",
+                "displayName": "Evento",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "Estado detectado",
+                "displayName": "Estado detectado",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "Correo",
+                "displayName": "Correo",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "Fecha envío",
+                "displayName": "Fecha envío",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "Resultado",
+                "displayName": "Resultado",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "Message ID",
+                "displayName": "Message ID",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "Notas",
+                "displayName": "Notas",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": false
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          600,
+          0
+        ],
+        "id": "ba3ee41b-84bd-41ad-b142-238f07c523a1",
+        "name": "Registrar resultado",
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "name": "Google Sheets account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Leer Pedidos": {
+        "main": [
+          [
+            {
+              "node": "Marcar Pedidos",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Marcar Pedidos": {
+        "main": [
+          [
+            {
+              "node": "Unir Pedidos y Log",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Leer Automation Log": {
+        "main": [
+          [
+            {
+              "node": "Marcar Log",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Marcar Log": {
+        "main": [
+          [
+            {
+              "node": "Unir Pedidos y Log",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Unir Pedidos y Log": {
+        "main": [
+          [
+            {
+              "node": "Seleccionar envíos pendientes",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Seleccionar envíos pendientes": {
+        "main": [
+          [
+            {
+              "node": "Enviar prueba de correo",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Preparar registro": {
+        "main": [
+          [
+            {
+              "node": "Registrar resultado",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ejecutar prueba manual": {
+        "main": [
+          [
+            {
+              "node": "Leer Pedidos",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Leer Automation Log",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Enviar prueba de correo": {
+        "main": [
+          [
+            {
+              "node": "Preparar registro",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "active": false,
+    "settings": {
+      "executionOrder": "v1",
+      "timezone": "America/El_Salvador"
+    },
+    "versionId": "2bf79954-db20-489d-b49a-128c7acb2af5",
+    "meta": {
+      "templateCredsSetupCompleted": true
+    },
+    "tags": [],
+    "id": "EPLControlledReadyTest"
+  }
+]
